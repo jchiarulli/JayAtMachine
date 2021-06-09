@@ -13,7 +13,7 @@ import Navbar from "./navbar";
 import Menu from "./menu";
 import "./layout.less";
 
-const Layout = ({ children }) => {
+const Layout = ({ children, location }) => {
   const data = useStaticQuery(graphql`
     query SiteTitleQuery {
       site {
@@ -26,7 +26,7 @@ const Layout = ({ children }) => {
 
   return (
     <>
-      <Navbar siteTitle={data.site.siteMetadata.title} />
+      <Navbar siteTitle={data.site.siteMetadata.title} location={location} />
       {/* <Menu /> */}
       <div
         style={{

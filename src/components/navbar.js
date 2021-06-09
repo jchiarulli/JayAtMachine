@@ -1,7 +1,6 @@
 import { Link } from "gatsby";
 import PropTypes from "prop-types";
-import React, { useState } from "react";
-import classes from "./navbar.module.less";
+import React, { useState, useEffect } from "react";
 import {
   FaGithub,
   FaLinkedin,
@@ -11,70 +10,138 @@ import {
   FaBars,
   FaTimes,
 } from "react-icons/fa";
+import classes from "./navbar.module.less";
+import useWindowSize from "../utils/useWindowSize";
 
-const Navbar = ({ siteTitle }) => {
-  const [isMenuCollapsed, setMenuCollapsed] = useState(true);
-  const [isCollapsed, setIsCollapsed] = useState(true);
-  const [isDisabled, setIsDisabled] = useState(false);
-  const [stillFullHeight, setstillFullHeight] = useState(false);
+const Navbar = ({ siteTitle, location }) => {
+  const [isMenuCollapsing, setIsMenuCollapsing] = useState(true);
+  const [isMenuCollapseComplete, setIsMenuCollapseComplete] = useState(true);
+  const [isToggleDisabled, setIsToggleDisabled] = useState(false);
+  const [isTransitionEnabled, setIsTransitionEnabled] = useState(false);
+  const [
+    shouldSmallNavbarStateReset,
+    setShouldSmallNavbarStateReset,
+  ] = useState(false);
 
-  const toggleMenu = () => {
-    setMenuCollapsed(!isMenuCollapsed);
-    setIsDisabled(true);
+  const { width } = useWindowSize();
+  useEffect(() => {
+    // console.log("here");
+    if (width > 1025 && shouldSmallNavbarStateReset) {
+      // console.log("if width > 1025");
+      setShouldSmallNavbarStateReset(false);
+      setIsTransitionEnabled(false);
+      setIsMenuCollapsing(true);
+      setIsMenuCollapseComplete(true);
+      setIsToggleDisabled(false);
+      document.getElementsByTagName("html")[0].style.overflow = "";
+    } else if (width <= 1025 && !shouldSmallNavbarStateReset) {
+      // console.log("else if width <= 1025");
+      setShouldSmallNavbarStateReset(true);
+    }
+  }, [width]);
+
+  const closeMenuWhenCurrentLinkPressed = (toValue) => {
+    // console.log("location in closeMenuWhenCurrentLinkPressed", location);
+    if (
+      location.pathname === toValue &&
+      (!isMenuCollapseComplete || isToggleDisabled)
+    ) {
+      // console.log("menu is not collapsed");
+      setIsTransitionEnabled(false);
+      setIsMenuCollapsing(true);
+      setIsMenuCollapseComplete(true);
+      setIsToggleDisabled(false);
+      document.getElementsByTagName("html")[0].style.overflow = "";
+    } else if (
+      location.pathname !== toValue &&
+      (!isMenuCollapseComplete || isToggleDisabled)
+    ) {
+      // console.log("different linked clicked");
+      document.getElementsByTagName("html")[0].style.overflow = "";
+    }
   };
 
-  const handleTransitionEnd = (e) => {
-    // console.log(e.propertyName);
-    if (e.propertyName === "transform") {
-      setIsCollapsed(!isCollapsed);
-      setstillFullHeight(!stillFullHeight);
-      setIsDisabled(false);
+  const toggleMenu = () => {
+    if (!isToggleDisabled) {
+      if (isMenuCollapsing) {
+        // console.log("Set html overflow to hidden");
+        document.getElementsByTagName("html")[0].style.overflow = "hidden";
+      }
+
+      setIsMenuCollapsing(!isMenuCollapsing);
+      setIsToggleDisabled(true);
+
+      if (!isTransitionEnabled) {
+        setIsTransitionEnabled(true);
+      }
+    }
+  };
+
+  const handleTransitionEnd = (eventPropertyName) => {
+    if (eventPropertyName === "transform") {
+      setIsMenuCollapseComplete(!isMenuCollapseComplete);
+      setIsToggleDisabled(false);
+      if (isMenuCollapsing) {
+        // console.log("Set html overflow to auto");
+        document.getElementsByTagName("html")[0].style.overflow = "";
+      }
+      // console.log("Transition finsihed");
     }
   };
 
   return (
     <nav
-      // className={isMenuCollapsed ? classes.collapsedMenu : classes.expandedMenu}
       className={[
-        stillFullHeight ? classes.fullHeight : classes.notFullHeight,
-        isMenuCollapsed ? classes.collapsedMenu : classes.expandedMenu,
+        !isMenuCollapseComplete && classes.menuCollapseIncomplete,
+        isMenuCollapsing ? classes.collapseMenu : classes.expandMenu,
       ].join(" ")}
     >
-      {console.log(isDisabled)}
+      {/* {console.log("isToggleDisabled", isToggleDisabled)} */}
+      {/* {console.log("isMenuCollapseComplete", isMenuCollapseComplete)} */}
+      {/* {console.log("width", width)} */}
       <ul className={classes.home_and_toggle}>
         <li className={classes.logo}>
-          <Link to="/">Jay@Machine</Link>
+          <Link to="/" onClick={() => closeMenuWhenCurrentLinkPressed("/")}>
+            Jay@Machine
+          </Link>
         </li>
-        <li className={classes.toggle}>
+        <li>
           <FaBars
-            // className={classes.bars}
             className={[
               classes.bars,
-              isDisabled ? classes.disabled : classes.enabled,
+              isTransitionEnabled
+                ? classes.enableTransition
+                : classes.disableTransition,
             ].join(" ")}
             onClick={toggleMenu}
           />
           <FaTimes
-            // className={classes.times}
             className={[
               classes.times,
-              isDisabled ? classes.disabled : classes.enabled,
+              isTransitionEnabled
+                ? classes.enableTransition
+                : classes.disableTransition,
             ].join(" ")}
             onClick={toggleMenu}
-            // disabled={isDisabled}
           />
         </li>
       </ul>
       <ul
         className={[
           classes.pages,
-          isCollapsed ? classes.inactive : classes.active,
+          isTransitionEnabled
+            ? classes.enableTransition
+            : classes.disableTransition,
         ].join(" ")}
-        // className={classes.pages}
-        onTransitionEnd={(e) => handleTransitionEnd(e)}
+        onTransitionEnd={(e) => handleTransitionEnd(e.propertyName)}
       >
         <li>
-          <Link to="/blog">Blog</Link>
+          <Link
+            to="/blog"
+            onClick={() => closeMenuWhenCurrentLinkPressed("/blog")}
+          >
+            Blog
+          </Link>
         </li>
         <li>
           <Link to="/blog">Topics</Link>
@@ -89,33 +156,34 @@ const Navbar = ({ siteTitle }) => {
       <ul
         className={[
           classes.social,
-          isCollapsed ? classes.inactive : classes.active,
+          isTransitionEnabled
+            ? classes.enableTransition
+            : classes.disableTransition,
         ].join(" ")}
-        // className={classes.social}
       >
         <li>
           <a href="#">
-            <FaYoutube></FaYoutube>
+            <FaYoutube style={{ color: "#FF0000" }}></FaYoutube>
           </a>
         </li>
         <li>
           <a href="#">
-            <FaDiscord></FaDiscord>
+            <FaDiscord style={{ color: "#7289da" }}></FaDiscord>
+          </a>
+        </li>
+        <li>
+          <a href="https://github.com/jchiarulli">
+            <FaGithub style={{ color: "#fafafa" }}></FaGithub>
+          </a>
+        </li>
+        <li>
+          <a href="https://www.linkedin.com/in/jason-chiarulli-321358143/">
+            <FaLinkedin style={{ color: "#2867B2" }}></FaLinkedin>
           </a>
         </li>
         <li>
           <a href="#">
-            <FaGithub></FaGithub>
-          </a>
-        </li>
-        <li>
-          <a href="#">
-            <FaLinkedin></FaLinkedin>
-          </a>
-        </li>
-        <li>
-          <a href="#">
-            <FaPatreon></FaPatreon>
+            <FaPatreon style={{ color: "#f96854" }}></FaPatreon>
           </a>
         </li>
       </ul>

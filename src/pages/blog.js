@@ -1,14 +1,14 @@
-import React from "react"
-import Layout from "../components/layout"
-import SEO from "../components/seo"
-import { graphql, Link } from "gatsby"
+import React from "react";
+import Layout from "../components/layout";
+import SEO from "../components/seo";
+import { graphql, Link } from "gatsby";
 
-const BlogPage = ({ data }) => (
-  <Layout>
+const BlogPage = ({ data, location }) => (
+  <Layout location={location}>
     <SEO title="Blog" />
     <div>
       <h1>Latest Posts</h1>
-      {data.allMarkdownRemark.edges.map(post => (
+      {data.allMarkdownRemark.edges.map((post) => (
         <div key={post.node.id}>
           <h3>{post.node.frontmatter.title}</h3>
           <small>
@@ -25,7 +25,7 @@ const BlogPage = ({ data }) => (
       ))}
     </div>
   </Layout>
-)
+);
 
 export const pageQuery = graphql`
   query BlogIndexQuery {
@@ -43,6 +43,6 @@ export const pageQuery = graphql`
       }
     }
   }
-`
+`;
 
-export default BlogPage
+export default BlogPage;
